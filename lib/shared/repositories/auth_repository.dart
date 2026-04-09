@@ -13,13 +13,19 @@ class AuthRepository {
     }
   }
 
-  Future<void> signUp(String name, String email, String password) async {
+  /// Signs up the user. Returns true if email verification is required before login.
+  Future<bool> signUp(String name, String email, String password) async {
     final response = await _client.auth.signUp(email: email, password: password);
     final user = response.user;
     if (user == null) {
       throw Exception('Signup failed');
     }
     await _client.from('profiles').upsert({'id': user.id, 'name': name});
+    return response.session == null; // true = needs email verification
+  }
+
+  Future<void> updateProfile(String userId, String name) async {
+    await _client.from('profiles').upsert({'id': userId, 'name': name});
   }
 
   Future<void> resetPassword(String email) async {
