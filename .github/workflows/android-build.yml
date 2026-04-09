@@ -27,6 +27,14 @@ jobs:
       - name: Ensure platform folders
         run: flutter create . --platforms=android,ios
 
+      - name: Create .env placeholder
+        run: |
+          touch .env
+          echo "SUPABASE_URL=" >> .env
+          echo "SUPABASE_ANON_KEY=" >> .env
+          echo "API_BASE_URL=" >> .env
+          echo "ONLINE_API_KEY=" >> .env
+
       - name: Pub get
         run: flutter pub get
 

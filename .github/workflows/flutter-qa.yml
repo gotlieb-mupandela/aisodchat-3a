@@ -18,6 +18,14 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Create .env placeholder
+        run: |
+          touch .env
+          echo "SUPABASE_URL=" >> .env
+          echo "SUPABASE_ANON_KEY=" >> .env
+          echo "API_BASE_URL=" >> .env
+          echo "ONLINE_API_KEY=" >> .env
+
       - name: Install dependencies
         run: flutter pub get
 
