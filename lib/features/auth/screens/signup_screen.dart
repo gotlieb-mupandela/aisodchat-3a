@@ -20,6 +20,15 @@ class _SignupScreenState extends State<SignupScreen> {
   bool loading = false;
   bool _awaitingVerification = false;
 
+  @override
+  void dispose() {
+    name.dispose();
+    email.dispose();
+    password.dispose();
+    confirm.dispose();
+    super.dispose();
+  }
+
   String? _validateEmail(String value) => RegExp(r'\S+@\S+\.\S+').hasMatch(value) ? null : 'Invalid email';
 
   Future<void> _submit() async {

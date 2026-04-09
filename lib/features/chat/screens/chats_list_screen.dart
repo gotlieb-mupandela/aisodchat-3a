@@ -35,18 +35,31 @@ class _ChatsListScreenState extends ConsumerState<ChatsListScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    search.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     final user = ref.read(currentUserProvider);
     if (user == null) {
       if (mounted) context.go('/login');
       return;
     }
-    final rows = await ref.read(chatRepositoryProvider).getConversations(user.id);
-    if (mounted) {
-      setState(() {
-        conversations = rows;
-        loading = false;
-      });
+    try {
+      final rows = await ref.read(chatRepositoryProvider).getConversations(user.id);
+      if (mounted) {
+        setState(() {
+          conversations = rows;
+          loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load chats: $e')));
+      }
     }
   }
 
@@ -251,8 +264,25 @@ class _ChatsListScreenState extends ConsumerState<ChatsListScreen> {
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
                                   onPressed: () async {
-                                    await ref.read(chatRepositoryProvider).deleteConversation(chat.id);
-                                    await _load();
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        backgroundColor: AppColors.bgSecondary,
+                                        title: const Text('Delete Chat', style: TextStyle(color: AppColors.textPrimary)),
+                                        content: const Text('This will permanently delete this conversation.', style: TextStyle(color: AppColors.textSecondary)),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: AppColors.danger))),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm != true) return;
+                                    try {
+                                      await ref.read(chatRepositoryProvider).deleteConversation(chat.id);
+                                      await _load();
+                                    } catch (e) {
+                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+                                    }
                                   },
                                 ),
                               );

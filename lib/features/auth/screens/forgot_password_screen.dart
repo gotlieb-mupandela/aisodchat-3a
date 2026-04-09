@@ -17,6 +17,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool loading = false;
   bool success = false;
 
+  @override
+  void dispose() {
+    email.dispose();
+    super.dispose();
+  }
+
   Future<void> _send() async {
     setState(() => loading = true);
     try {

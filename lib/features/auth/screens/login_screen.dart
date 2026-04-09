@@ -17,6 +17,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final password = TextEditingController();
   bool loading = false;
 
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     setState(() => loading = true);
     try {

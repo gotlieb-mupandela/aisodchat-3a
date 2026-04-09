@@ -61,14 +61,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() => loading = false);
       return;
     }
-    final rows = await ref.read(chatRepositoryProvider).getMessages(widget.chatId);
-    if (mounted) {
-      setState(() {
-        messages = rows;
-        conversationId = widget.chatId;
-        loading = false;
-      });
-      _scrollToBottom();
+    try {
+      final rows = await ref.read(chatRepositoryProvider).getMessages(widget.chatId);
+      if (mounted) {
+        setState(() {
+          messages = rows;
+          conversationId = widget.chatId;
+          loading = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
+      }
     }
   }
 
