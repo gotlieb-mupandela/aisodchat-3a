@@ -9,6 +9,7 @@ class AppScaffold extends StatelessWidget {
     this.actions = const [],
     this.leading,
     this.padding = const EdgeInsets.all(16),
+    this.floatingActionButton,
   });
 
   final Widget child;
@@ -16,6 +17,7 @@ class AppScaffold extends StatelessWidget {
   final List<Widget> actions;
   final Widget? leading;
   final EdgeInsets padding;
+  final Widget? floatingActionButton;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +31,7 @@ class AppScaffold extends StatelessWidget {
               actions: actions,
               leading: leading,
             ),
+      floatingActionButton: floatingActionButton,
       body: SafeArea(
         child: Padding(
           padding: padding,

@@ -210,25 +210,59 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
           ),
           Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppColors.bgSecondary, borderRadius: BorderRadius.circular(16)),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(color: AppColors.accent.withOpacity(0.3), width: 1.5),
+            ),
             child: Row(
               children: [
-                const CircleAvatar(radius: 16, backgroundColor: Color(0xFF333333), child: Icon(Icons.add, size: 16)),
                 const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () {}, // Attachment logic placeholder
+                  icon: const Icon(Icons.add_circle_outline, color: AppColors.textMuted, size: 24),
+                ),
                 Expanded(
                   child: TextField(
                     controller: input,
                     minLines: 1,
                     maxLines: 6,
-                    style: const TextStyle(fontFamily: 'DMSans'),
-                    decoration: const InputDecoration.collapsed(hintText: 'Chat with Aisod 3A...'),
+                    style: const TextStyle(fontFamily: 'DMSans', fontSize: 15),
+                    decoration: const InputDecoration(
+                      hintText: 'Chat with Aisod 3A...',
+                      hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 15),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      fillColor: Colors.transparent,
+                      filled: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: _send,
-                  icon: const CircleAvatar(radius: 16, backgroundColor: AppColors.accent, child: Icon(Icons.arrow_upward, size: 16, color: Colors.white)),
-                )
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: AppColors.accentLight,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: _send,
+                      child: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           )

@@ -40,14 +40,24 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.accent,
-              child: Text('A', style: TextStyle(color: Colors.white, fontFamily: 'PlayfairDisplay', fontSize: 26)),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF2D6BDE), Color(0xFF7EA6F7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+              ),
+              child: const Center(
+                child: Text('A', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 32)),
+              ),
             ),
-            SizedBox(height: 12),
-            Text('AisodChat', style: TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 28, color: AppColors.textPrimary)),
-            Text('by AISOD Institute', style: TextStyle(fontFamily: 'DMSans', fontSize: 12, color: AppColors.textMuted)),
+            const SizedBox(height: 16),
+            const Text('AisodChat', style: TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 28, color: AppColors.textPrimary)),
+            const Text('by AISOD Institute', style: TextStyle(fontFamily: 'DMSans', fontSize: 12, color: AppColors.textMuted)),
           ],
         ),
       ),

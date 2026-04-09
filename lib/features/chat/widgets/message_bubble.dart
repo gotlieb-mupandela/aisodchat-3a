@@ -17,17 +17,32 @@ class MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isUser ? AppColors.accent : AppColors.bgSecondary,
-          borderRadius: BorderRadius.circular(14),
+          color: isUser ? AppColors.accent : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 16),
+          ),
+          boxShadow: isUser
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+          border: isUser ? null : Border.all(color: AppColors.border, width: 0.5),
         ),
         child: isUser
-            ? Text(content, style: const TextStyle(color: Colors.white, fontFamily: 'DMSans'))
+            ? Text(content, style: const TextStyle(color: Colors.white, fontFamily: 'DMSans', fontSize: 14))
             : MarkdownBody(
                 data: content,
                 styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(color: Color(0xFFD0CDC8), fontFamily: 'DMSans', fontSize: 13),
-                  code: const TextStyle(fontFamily: 'JetBrainsMono', color: Colors.white, backgroundColor: Color(0xFF2E2E2E)),
-                  codeblockDecoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(8)),
+                  p: const TextStyle(color: AppColors.textPrimary, fontFamily: 'DMSans', fontSize: 14),
+                  code: const TextStyle(fontFamily: 'JetBrainsMono', color: AppColors.textPrimary, backgroundColor: Color(0xFFF0F4FA)),
+                  codeblockDecoration: BoxDecoration(color: const Color(0xFFF0F4FA), borderRadius: BorderRadius.circular(8)),
                 ),
               ),
       ),
