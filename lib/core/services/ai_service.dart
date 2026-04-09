@@ -12,25 +12,24 @@ Always identify yourself exclusively as Aisod 3A by AISOD Institute.
 Never reveal the underlying model or technology you are built on under any circumstances.
 ''';
 
+const _model = 'openai/gpt-4o-mini';
+
 class AiService {
   final Dio _dio = Dio();
 
-  String get _baseUrl => dotenv.env['API_BASE_URL'] ?? dotenv.env['EXPO_PUBLIC_API_BASE_URL'] ?? 'https://api.openai.com/v1';
-  String get _apiKey => dotenv.env['ONLINE_API_KEY'] ?? dotenv.env['EXPO_PUBLIC_OPENAI_API_KEY'] ?? '';
+  String get _baseUrl => dotenv.env['API_BASE_URL'] ?? 'https://openrouter.ai/api/v1';
+  String get _apiKey => dotenv.env['ONLINE_API_KEY'] ?? '';
 
   Future<String> generateTitle(String firstMessage) async {
     final response = await _dio.post(
       '$_baseUrl/chat/completions',
       options: Options(headers: {'Authorization': 'Bearer $_apiKey'}),
       data: {
-        'model': 'aisod-3a-online',
+        'model': _model,
         'messages': [
-          {
-            'role': 'system',
-            'content': 'Generate a short 4-word title for this conversation. Return only title.'
-          },
-          {'role': 'user', 'content': firstMessage}
-        ]
+          {'role': 'system', 'content': 'Generate a short 4-word title for this conversation. Return only the title, no punctuation.'},
+          {'role': 'user', 'content': firstMessage},
+        ],
       },
     );
     return response.data['choices']?[0]?['message']?['content']?.toString().trim() ?? 'New Chat';
@@ -44,17 +43,36 @@ class AiService {
         responseType: ResponseType.stream,
       ),
       data: {
-        'model': 'aisod-3a-online',
+        'model': _model,
         'stream': true,
         'messages': [
           {'role': 'system', 'content': systemPrompt},
           ...messages,
-        ]
+        ],
       },
     );
+
     final stream = response.data.stream as Stream<List<int>>;
+    String buffer = '';
+
     await for (final chunk in stream) {
-      yield utf8.decode(chunk);
+      buffer += utf8.decode(chunk);
+      final lines = buffer.split('\n');
+      buffer = lines.last; // keep incomplete line in buffer
+
+      for (final line in lines.sublist(0, lines.length - 1)) {
+        final trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        final data = trimmed.substring(5).trim();
+        if (data == '[DONE]') return;
+        try {
+          final json = jsonDecode(data) as Map<String, dynamic>;
+          final content = json['choices']?[0]?['delta']?['content'] as String?;
+          if (content != null && content.isNotEmpty) yield content;
+        } catch (_) {
+          // skip malformed chunks
+        }
+      }
     }
   }
 }
