@@ -27,6 +27,19 @@ jobs:
       - name: Ensure platform folders
         run: flutter create . --platforms=android,ios
 
+      - name: Ensure internet permission in manifest
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          echo "--- Manifest before patch ---"
+          cat "$MANIFEST"
+          if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            sed -i 's|<manifest xmlns:android|<uses-permission android:name="android.permission.INTERNET"/>\n    <manifest xmlns:android|' "$MANIFEST"
+            echo "--- Internet permission added ---"
+          else
+            echo "--- Internet permission already present ---"
+          fi
+          cat "$MANIFEST"
+
       - name: Create .env from secrets
         run: |
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
