@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 const systemPrompt = '''
 You are Aisod 3A, an advanced AI assistant created by AISOD Institute.
@@ -17,8 +16,8 @@ const _model = 'openai/gpt-4o-mini';
 class AiService {
   final Dio _dio = Dio();
 
-  String get _baseUrl => dotenv.env['API_BASE_URL'] ?? 'https://openrouter.ai/api/v1';
-  String get _apiKey => dotenv.env['ONLINE_API_KEY'] ?? '';
+  final String _baseUrl = 'https://openrouter.ai/api/v1';
+  final String _apiKey = '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';
 
   Future<String> generateTitle(String firstMessage) async {
     final response = await _dio.post(
