@@ -44,9 +44,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               final user = ref.read(authRepositoryProvider).currentUser;
               if (user == null) return;
               setState(() => loading = true);
-              await ref.read(chatRepositoryProvider);
               await Future<void>.delayed(const Duration(milliseconds: 300));
-              if (mounted) {
+              if (context.mounted) {
                 setState(() => loading = false);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
               }

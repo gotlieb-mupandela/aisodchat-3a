@@ -86,7 +86,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (mounted) context.go('/chat/$cid');
     }
     await ref.read(chatRepositoryProvider).saveMessage(
-          conversationId: cid!,
+          conversationId: cid,
           role: 'user',
           content: text,
           isOffline: mode == ChatMode.offline,

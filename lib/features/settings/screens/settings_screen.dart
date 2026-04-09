@@ -23,7 +23,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Default Mode: Offline', style: TextStyle(fontFamily: 'DMSans')),
             trailing: Switch(
               value: mode == ChatMode.offline,
-              activeColor: AppColors.accent,
+              activeThumbColor: AppColors.accent,
               onChanged: (value) => ref.read(defaultModeProvider.notifier).set(value ? ChatMode.offline : ChatMode.online),
             ),
           ),
