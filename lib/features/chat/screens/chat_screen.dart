@@ -26,6 +26,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool loading = true;
   bool typing = false;
   StreamSubscription<String>? streamSub;
+  StreamSubscription<String>? offlineStreamSub;
   String? conversationId;
 
   @override
@@ -37,7 +38,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     streamSub?.cancel();
+    offlineStreamSub?.cancel();
+    input.dispose();
+    scroll.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scroll.hasClients) {
+        scroll.animateTo(
+          scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -46,11 +62,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
     final rows = await ref.read(chatRepositoryProvider).getMessages(widget.chatId);
-    setState(() {
-      messages = rows;
-      conversationId = widget.chatId;
-      loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        messages = rows;
+        conversationId = widget.chatId;
+        loading = false;
+      });
+      _scrollToBottom();
+    }
   }
 
   Future<void> _send() async {
@@ -73,96 +92,131 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       messages = [...messages, optimisticUser];
       typing = true;
     });
+    _scrollToBottom();
 
-    var cid = conversationId;
-    if (cid == null) {
-      final title = await ref.read(aiServiceProvider).generateTitle(text);
-      cid = await ref.read(chatRepositoryProvider).createConversation(
-            userId: user.id,
-            title: title,
-            mode: mode,
-          );
-      conversationId = cid;
-      if (mounted) context.go('/chat/$cid');
-    }
-    await ref.read(chatRepositoryProvider).saveMessage(
-          conversationId: cid,
-          role: 'user',
-          content: text,
-          isOffline: mode == ChatMode.offline,
-        );
-
-    final assistantSeed = AppMessage(
-      id: 'local-ai-${DateTime.now().millisecondsSinceEpoch}',
-      conversationId: cid,
-      role: 'assistant',
-      content: '',
-      createdAt: DateTime.now(),
-      isOffline: mode == ChatMode.offline,
-    );
-    setState(() => messages = [...messages, assistantSeed]);
-
-    if (mode == ChatMode.online) {
-      final history = messages.map((m) => {'role': m.role, 'content': m.content}).toList();
-      final stream = ref.read(aiServiceProvider).streamReply(history);
-      streamSub = stream.listen((chunk) {
-        setState(() {
-          final last = messages.last;
-          messages = [...messages.sublist(0, messages.length - 1), AppMessage(
-            id: last.id,
-            conversationId: last.conversationId,
-            role: last.role,
-            content: '${last.content}$chunk',
-            createdAt: last.createdAt,
-            isOffline: false,
-          )];
-        });
-      }, onDone: () async {
-        final finalText = messages.last.content;
-        await ref.read(chatRepositoryProvider).saveMessage(
-              conversationId: cid!,
-              role: 'assistant',
-              content: finalText,
-              isOffline: false,
+    try {
+      var cid = conversationId;
+      if (cid == null) {
+        String title = 'New Chat';
+        try {
+          title = await ref.read(aiServiceProvider).generateTitle(text);
+        } catch (_) {}
+        cid = await ref.read(chatRepositoryProvider).createConversation(
+              userId: user.id,
+              title: title,
+              mode: mode,
             );
-        if (mounted) setState(() => typing = false);
-      }, onError: (_) {
-        if (mounted) setState(() => typing = false);
-      });
-    } else {
-      final downloaded = ref.read(modelDownloadedProvider);
-      if (!downloaded) {
-        if (mounted) {
-          setState(() => typing = false);
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.transparent,
-            builder: (_) => const ModelPickerSheet(),
-          );
-        }
-        return;
+        conversationId = cid;
+        if (mounted) context.go('/chat/$cid');
       }
-      ref.read(offlineModelServiceProvider).complete(text).listen((token) async {
-        setState(() {
-          final last = messages.last;
-          messages = [...messages.sublist(0, messages.length - 1), AppMessage(
-            id: last.id,
-            conversationId: last.conversationId,
-            role: last.role,
-            content: '${last.content}$token',
-            createdAt: last.createdAt,
-            isOffline: true,
-          )];
-        });
-      }, onDone: () async {
-        await ref.read(chatRepositoryProvider).saveMessage(
-              conversationId: cid!,
-              role: 'assistant',
-              content: messages.last.content,
-              isOffline: true,
+      await ref.read(chatRepositoryProvider).saveMessage(
+            conversationId: cid,
+            role: 'user',
+            content: text,
+            isOffline: mode == ChatMode.offline,
+          );
+
+      final assistantSeed = AppMessage(
+        id: 'local-ai-${DateTime.now().millisecondsSinceEpoch}',
+        conversationId: cid,
+        role: 'assistant',
+        content: '',
+        createdAt: DateTime.now(),
+        isOffline: mode == ChatMode.offline,
+      );
+      setState(() => messages = [...messages, assistantSeed]);
+
+      if (mode == ChatMode.online) {
+        final history = messages.map((m) => {'role': m.role, 'content': m.content}).toList();
+        final stream = ref.read(aiServiceProvider).streamReply(history);
+        streamSub = stream.listen(
+          (chunk) {
+            if (!mounted) return;
+            setState(() {
+              final last = messages.last;
+              messages = [
+                ...messages.sublist(0, messages.length - 1),
+                AppMessage(
+                  id: last.id,
+                  conversationId: last.conversationId,
+                  role: last.role,
+                  content: '${last.content}$chunk',
+                  createdAt: last.createdAt,
+                  isOffline: false,
+                ),
+              ];
+            });
+            _scrollToBottom();
+          },
+          onDone: () async {
+            if (messages.isEmpty) return;
+            final finalText = messages.last.content;
+            await ref.read(chatRepositoryProvider).saveMessage(
+                  conversationId: cid!,
+                  role: 'assistant',
+                  content: finalText,
+                  isOffline: false,
+                );
+            if (mounted) setState(() => typing = false);
+          },
+          onError: (_) {
+            if (mounted) setState(() => typing = false);
+          },
+        );
+      } else {
+        final downloaded = ref.read(modelDownloadedProvider);
+        if (!downloaded) {
+          if (mounted) {
+            setState(() => typing = false);
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const ModelPickerSheet(),
             );
-        if (mounted) setState(() => typing = false);
-      });
+          }
+          return;
+        }
+        offlineStreamSub = ref.read(offlineModelServiceProvider).complete(text).listen(
+          (token) {
+            if (!mounted) return;
+            setState(() {
+              final last = messages.last;
+              messages = [
+                ...messages.sublist(0, messages.length - 1),
+                AppMessage(
+                  id: last.id,
+                  conversationId: last.conversationId,
+                  role: last.role,
+                  content: '${last.content}$token',
+                  createdAt: last.createdAt,
+                  isOffline: true,
+                ),
+              ];
+            });
+            _scrollToBottom();
+          },
+          onDone: () async {
+            if (messages.isEmpty) return;
+            await ref.read(chatRepositoryProvider).saveMessage(
+                  conversationId: cid!,
+                  role: 'assistant',
+                  content: messages.last.content,
+                  isOffline: true,
+                );
+            if (mounted) setState(() => typing = false);
+          },
+          onError: (_) {
+            if (mounted) setState(() => typing = false);
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => typing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
@@ -195,7 +249,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           children: [
                             CircleAvatar(radius: 20, backgroundColor: AppColors.accent, child: Text('A', style: TextStyle(color: Colors.white))),
                             SizedBox(height: 12),
-                            Text('How can I help you this afternoon?', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 20))
+                            Text('How can I help you?', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 20)),
                           ],
                         ),
                       )
